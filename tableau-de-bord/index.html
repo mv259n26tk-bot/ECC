@@ -1,0 +1,915 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mon tableau de bord</title>
+<style>
+  :root {
+    --bg: #FFECDA;
+    --ink: #1E151C;
+    --accent: #C56F8C;
+    --accent-hover: #D17F9B;
+    --accent-ink: #8E3E5B;
+    --accent-soft: #F7D6DF;
+    --card: #FFF8F1;
+    --white: #FFFFFF;
+    --muted: #5A4A55;
+    --line: rgba(30, 21, 28, 0.14);
+    --radius: 14px;
+    --serif: Georgia, "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Cambria, "Times New Roman", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.5;
+  }
+  h1, h2, h3 { font-family: var(--serif); font-weight: 700; line-height: 1.2; margin: 0; }
+  h1 { font-size: clamp(1.8rem, 5vw, 2.6rem); }
+  h2 { font-size: clamp(1.4rem, 3.5vw, 1.75rem); }
+  p { margin: 0; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--accent-ink); outline-offset: 2px; }
+  .sr {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  /* ---------- Mise en page ---------- */
+  .page { max-width: 1120px; margin: 0 auto; padding: 20px 16px 96px; }
+  .top {
+    display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between;
+    gap: 8px 20px; margin-bottom: 16px;
+  }
+  .save-status { font-size: 0.9rem; color: var(--muted); }
+  .save-status.warn {
+    color: var(--ink); background: var(--white); border: 2px solid var(--accent-ink);
+    border-radius: 10px; padding: 8px 12px; width: 100%;
+  }
+  .grid2 { display: grid; gap: 20px; margin-bottom: 20px; }
+  @media (min-width: 900px) { .grid2 { grid-template-columns: 1fr 1fr; align-items: start; } }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: 0 2px 10px rgba(30, 21, 28, 0.06);
+    padding: 20px;
+  }
+  @media (min-width: 700px) { .card { padding: 24px 28px; } }
+  .card-head {
+    display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between;
+    gap: 4px 12px; margin-bottom: 14px;
+  }
+  .card-head h2 { position: relative; padding-bottom: 6px; }
+  .card-head h2::after {
+    content: ""; position: absolute; left: 0; bottom: 0; width: 44px; height: 4px;
+    border-radius: 2px; background: var(--accent);
+  }
+  .meta { color: var(--muted); font-size: 0.95rem; }
+
+  /* ---------- Barre des exemples ---------- */
+  .samplebar {
+    display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px;
+    background: var(--white); border: 2px dashed var(--accent); border-radius: var(--radius);
+    padding: 12px 16px; margin-bottom: 20px;
+  }
+  .samplebar p { flex: 1 1 280px; font-size: 0.95rem; }
+  .samplebar[hidden] { display: none; }
+
+  /* ---------- Boutons ---------- */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    min-height: 44px; padding: 0 18px; border-radius: 10px;
+    border: 2px solid var(--accent); background: var(--accent); color: var(--ink);
+    font-weight: 700; cursor: pointer; text-decoration: none; white-space: nowrap;
+    touch-action: manipulation;
+  }
+  .btn:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .btn.ghost { background: transparent; border-color: var(--accent); }
+  .btn.ghost:hover { background: var(--accent-soft); }
+  .btn.small { min-height: 44px; padding: 0 12px; font-size: 0.95rem; }
+  .btn:disabled { opacity: 0.45; cursor: default; background: transparent; }
+  .icon-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    min-width: 44px; min-height: 44px; padding: 0 10px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--white); color: var(--ink);
+    cursor: pointer; font-size: 0.9rem; font-weight: 600; touch-action: manipulation;
+  }
+  .icon-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+  .icon-btn.danger:hover { border-color: var(--accent-ink); }
+  .icon-btn svg { flex: none; }
+  @media (max-width: 599px) { .btn-label { display: none; } .icon-btn { padding: 0; } }
+
+  /* ---------- Champs ---------- */
+  input[type="text"], textarea, select {
+    min-height: 44px; border: 2px solid rgba(30, 21, 28, 0.35); border-radius: 10px;
+    background: var(--white); padding: 8px 12px; width: 100%;
+  }
+  input[type="text"]:focus, textarea:focus, select:focus { border-color: var(--accent-ink); }
+  textarea { resize: vertical; line-height: 1.4; }
+  .add { display: flex; gap: 8px; margin-bottom: 12px; }
+  .add input { flex: 1 1 auto; min-width: 0; }
+
+  /* ---------- Cases à cocher ---------- */
+  .cb {
+    appearance: none; -webkit-appearance: none; margin: 0; flex: none;
+    width: 26px; height: 26px; border: 2px solid var(--ink); border-radius: 7px;
+    background: var(--white); display: grid; place-content: center; cursor: pointer;
+  }
+  .cb::before {
+    content: ""; width: 14px; height: 14px; background: var(--ink); transform: scale(0);
+    transition: transform 0.12s ease-in-out;
+    clip-path: polygon(14% 44%, 0 65%, 50% 100%, 100% 16%, 80% 0%, 43% 62%);
+  }
+  .cb:checked { background: var(--accent); }
+  .cb:checked::before { transform: scale(1); }
+  .cb-wrap {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px; flex: none; cursor: pointer;
+  }
+
+  /* ---------- Citation ---------- */
+  .quote-card { border-left: 8px solid var(--accent); }
+  .today-date { font-family: var(--serif); font-size: 1.15rem; font-weight: 700; color: var(--accent-ink); }
+  .eyebrow {
+    font-family: var(--sans); font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); margin: 14px 0 6px; font-weight: 700;
+  }
+  blockquote { margin: 0 0 16px; }
+  .quote-text { font-family: var(--serif); font-size: clamp(1.3rem, 3.6vw, 1.85rem); line-height: 1.35; }
+  .quote-author { margin-top: 8px; color: var(--muted); font-style: italic; }
+  .quote-author:empty { display: none; }
+
+  /* ---------- Listes ---------- */
+  .list { list-style: none; margin: 0; padding: 0; }
+  .item {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px;
+    padding: 6px 0; border-top: 1px solid var(--line);
+  }
+  .item:first-child { border-top: 0; }
+  .item .text { flex: 1 1 140px; min-width: 0; overflow-wrap: anywhere; cursor: pointer; padding: 8px 0; }
+  .goal .text { cursor: default; flex-basis: 100%; padding-bottom: 0; }
+  .item.done .text { text-decoration: line-through; color: var(--muted); }
+  .actions { display: flex; gap: 6px; margin-left: auto; }
+  .item.editing .actions, .item.editing .status { display: none; }
+  .divider {
+    font-size: 0.8rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700;
+    color: var(--muted); padding: 14px 0 4px; border-top: 1px solid var(--line);
+  }
+  .empty { color: var(--muted); padding: 10px 0; font-style: italic; }
+  .cheer { color: var(--accent-ink); font-weight: 700; padding: 10px 0; }
+  .inline-edit { display: flex; flex-wrap: wrap; gap: 6px; flex: 1 1 100%; min-width: 0; }
+  .inline-edit input { flex: 1 1 180px; min-width: 0; }
+
+  .goal { padding: 10px 0; }
+  .status {
+    width: auto; min-width: 150px; font-weight: 700; cursor: pointer;
+    border-color: rgba(30, 21, 28, 0.35);
+  }
+  .status[data-status="doing"] { background: var(--accent-soft); border-color: var(--accent); }
+  .status[data-status="done"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .status option { background: var(--white); color: var(--ink); }
+
+  /* ---------- Habitudes ---------- */
+  .week-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .week-label { flex: 1 1 100%; order: -1; }
+  .week-label strong { font-family: var(--serif); font-size: 1.15rem; display: block; }
+  @media (min-width: 760px) { .week-label { flex: 1 1 auto; order: 0; text-align: center; } }
+  .scroll-hint { font-size: 0.9rem; color: var(--muted); margin-bottom: 6px; }
+  @media (min-width: 760px) { .scroll-hint { display: none; } }
+  .table-wrap {
+    overflow-x: auto; -webkit-overflow-scrolling: touch;
+    border: 1px solid var(--line); border-radius: 12px; background: var(--white);
+  }
+  table.habits { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 640px; }
+  .habits th, .habits td { border-bottom: 1px solid var(--line); text-align: center; padding: 4px; }
+  .habits tbody tr:last-child th, .habits tbody tr:last-child td { border-bottom: 0; }
+  .habits thead th { font-size: 0.9rem; font-weight: 700; padding: 10px 4px; vertical-align: bottom; }
+  .habits thead th .dnum { display: block; font-family: var(--serif); font-size: 1.15rem; }
+  .habits thead th .tag {
+    display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .habits .habit-col {
+    position: sticky; left: 0; z-index: 1; background: var(--white); text-align: left;
+    min-width: 190px; width: 34%; max-width: 300px; padding: 8px 10px;
+    box-shadow: 1px 0 0 var(--line), 4px 0 8px -6px rgba(30, 21, 28, 0.25);
+  }
+  @media (max-width: 599px) { .habits .habit-col { min-width: 150px; width: auto; } }
+  .habits tbody .habit-col { font-weight: 600; }
+  .habit-name { display: block; overflow-wrap: anywhere; margin-bottom: 4px; }
+  .habit-col .actions { margin-left: 0; }
+  .habits .is-today { background: rgba(197, 111, 140, 0.16); }
+  .habits thead .is-today { background: var(--accent); color: var(--ink); border-radius: 10px 10px 0 0; }
+  .habits .count { font-weight: 700; color: var(--muted); white-space: nowrap; padding: 4px 10px; }
+  .habits .empty-row td { text-align: left; padding: 16px; }
+  .habits td .cb-wrap { margin: 0 auto; }
+  .habits .is-future .cb { opacity: 0.6; }
+
+  /* ---------- Fenêtre des citations ---------- */
+  dialog {
+    width: min(680px, calc(100% - 24px)); max-height: calc(100% - 32px);
+    border: 0; border-radius: var(--radius); padding: 0; background: var(--card); color: var(--ink);
+    box-shadow: 0 20px 60px rgba(30, 21, 28, 0.35);
+  }
+  dialog::backdrop { background: rgba(30, 21, 28, 0.5); }
+  .dlg-inner { padding: 20px; }
+  @media (min-width: 700px) { .dlg-inner { padding: 24px 28px; } }
+  .dlg-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    position: sticky; top: 0; background: var(--card); padding: 16px 20px;
+    border-bottom: 1px solid var(--line); z-index: 2;
+  }
+  .quote-edit { border: 1px solid var(--line); border-radius: 12px; padding: 12px; margin-bottom: 12px; background: var(--white); }
+  .quote-edit .row { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+  .quote-edit .row input { flex: 1 1 auto; min-width: 0; }
+  .badge {
+    display: inline-block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+    background: var(--accent); color: var(--ink); border-radius: 999px; padding: 2px 10px; margin-bottom: 6px;
+  }
+  .field-label { display: block; font-weight: 700; margin: 10px 0 4px; font-size: 0.95rem; }
+  .new-quote { border-top: 2px solid var(--accent); padding-top: 14px; margin-top: 8px; }
+  .new-quote h3 { font-size: 1.2rem; }
+  .new-quote .btn { margin-top: 12px; }
+
+  /* ---------- Message d'annulation ---------- */
+  .toast {
+    position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 50;
+    display: flex; align-items: center; gap: 12px; max-width: calc(100% - 32px);
+    background: var(--ink); color: var(--bg); padding: 8px 8px 8px 16px; border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(30, 21, 28, 0.35);
+  }
+  .toast[hidden] { display: none; }
+  .toast span { flex: 1 1 auto; }
+  .toast .btn { flex: none; }
+
+  footer.foot { text-align: center; color: var(--muted); font-size: 0.85rem; margin-top: 28px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header class="top">
+    <h1>Mon tableau de bord</h1>
+    <p id="saveStatus" class="save-status" role="status"></p>
+  </header>
+
+  <div id="sampleBar" class="samplebar" hidden>
+    <p>Quelques exemples ont été ajoutés pour vous montrer le fonctionnement. Les exemples que vous avez modifiés (renommés, cochés ou changés de statut) sont conservés si vous les retirez.</p>
+    <button type="button" id="removeSamples" class="btn ghost">Retirer les exemples</button>
+  </div>
+
+  <main>
+    <!-- 1. Citation du jour -->
+    <section class="card quote-card" aria-labelledby="quoteHeading">
+      <p id="todayDate" class="today-date"></p>
+      <h2 id="quoteHeading" class="eyebrow">Citation du jour</h2>
+      <blockquote>
+        <p id="quoteText" class="quote-text"></p>
+        <p id="quoteAuthor" class="quote-author"></p>
+      </blockquote>
+      <button type="button" id="openQuotes" class="btn ghost">Gérer mes citations</button>
+    </section>
+
+    <div class="grid2" style="margin-top:20px">
+      <!-- 2. Mes tâches -->
+      <section class="card" aria-labelledby="tasksHeading">
+        <div class="card-head">
+          <h2 id="tasksHeading">Mes tâches</h2>
+          <p id="taskCount" class="meta"></p>
+        </div>
+        <form id="taskForm" class="add" autocomplete="off">
+          <label class="sr" for="taskInput">Nouvelle tâche</label>
+          <input type="text" id="taskInput" placeholder="Ajouter une tâche…" maxlength="200">
+          <button type="submit" class="btn">Ajouter</button>
+        </form>
+        <ul id="taskList" class="list"></ul>
+      </section>
+
+      <!-- 3. Mes objectifs -->
+      <section class="card" aria-labelledby="goalsHeading">
+        <div class="card-head">
+          <h2 id="goalsHeading">Mes objectifs</h2>
+          <p id="goalCount" class="meta"></p>
+        </div>
+        <form id="goalForm" class="add" autocomplete="off">
+          <label class="sr" for="goalInput">Nouvel objectif</label>
+          <input type="text" id="goalInput" placeholder="Ajouter un objectif…" maxlength="200">
+          <button type="submit" class="btn">Ajouter</button>
+        </form>
+        <ul id="goalList" class="list"></ul>
+      </section>
+    </div>
+
+    <!-- 4. Mes habitudes -->
+    <section class="card" aria-labelledby="habitsHeading">
+      <div class="card-head">
+        <h2 id="habitsHeading">Mes habitudes</h2>
+      </div>
+      <div class="week-nav">
+        <button type="button" id="weekPrev" class="btn ghost small" aria-label="Semaine précédente">‹ Précédente</button>
+        <p class="week-label" aria-live="polite"><strong id="weekLabel"></strong><span id="weekSub" class="meta"></span></p>
+        <button type="button" id="weekNext" class="btn ghost small" aria-label="Semaine suivante">Suivante ›</button>
+        <button type="button" id="weekCurrent" class="btn small">Revenir à cette semaine</button>
+      </div>
+      <p class="scroll-hint">Faites glisser le tableau sur le côté pour voir toute la semaine.</p>
+      <div class="table-wrap" role="region" aria-label="Tableau des habitudes de la semaine" tabindex="0">
+        <table class="habits">
+          <thead id="habitHead"></thead>
+          <tbody id="habitBody"></tbody>
+        </table>
+      </div>
+      <form id="habitForm" class="add" autocomplete="off" style="margin-top:14px">
+        <label class="sr" for="habitInput">Nouvelle habitude</label>
+        <input type="text" id="habitInput" placeholder="Ajouter une habitude…" maxlength="200">
+        <button type="submit" class="btn">Ajouter</button>
+      </form>
+    </section>
+  </main>
+
+  <footer class="foot">Vos données restent uniquement dans ce navigateur, sur cet appareil.</footer>
+</div>
+
+<dialog id="quoteDialog" aria-labelledby="quoteDialogTitle">
+  <div class="dlg-head">
+    <h2 id="quoteDialogTitle">Mes citations</h2>
+    <button type="button" id="closeQuotes" class="btn ghost small">Fermer</button>
+  </div>
+  <div class="dlg-inner">
+    <p class="meta" id="quoteDialogInfo" style="margin-bottom:14px"></p>
+    <ul id="quoteList" class="list"></ul>
+    <form id="quoteForm" class="new-quote" autocomplete="off">
+      <h3>Ajouter une citation</h3>
+      <label class="field-label" for="newQuoteText">Texte</label>
+      <textarea id="newQuoteText" rows="2" maxlength="400" placeholder="Une phrase qui vous motive…"></textarea>
+      <label class="field-label" for="newQuoteAuthor">Auteur (facultatif)</label>
+      <input type="text" id="newQuoteAuthor" maxlength="100" placeholder="Par exemple : Proverbe">
+      <button type="submit" class="btn">Ajouter la citation</button>
+    </form>
+  </div>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden>
+  <span id="toastText"></span>
+  <button type="button" id="toastUndo" class="btn small">Annuler</button>
+</div>
+
+<noscript><p style="padding:16px">Ce tableau de bord a besoin de JavaScript pour fonctionner. Activez-le dans votre navigateur.</p></noscript>
+
+<script>
+(function () {
+  'use strict';
+
+  var KEY = 'mon-tableau-de-bord-v1';
+
+  /* ---------- Outils de date (heure locale) ---------- */
+  var MONTHS = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+  var DAYS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+  var SHORT_DAYS = ['dim.', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.'];
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function dateKey(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+  function addDays(d, n) { return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n); }
+  function mondayOf(d) { return addDays(d, -((d.getDay() + 6) % 7)); }
+  function dayNum(d) { return d.getDate() === 1 ? '1er' : String(d.getDate()); }
+  function longDate(d) { return DAYS[d.getDay()] + ' ' + dayNum(d) + ' ' + MONTHS[d.getMonth()] + ' ' + d.getFullYear(); }
+  function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+  function dayIndex(d) { return Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000); }
+  function plural(n, one, many) { return n + ' ' + (n > 1 ? many : one); }
+  function shorten(s) { return s.length > 40 ? s.slice(0, 39) + '…' : s; }
+
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+
+  /* ---------- Données de départ ---------- */
+  var DEFAULT_QUOTES = [
+    ['Petit à petit, l’oiseau fait son nid.', 'Proverbe'],
+    ['Un voyage de mille lieues commence toujours par un premier pas.', 'Lao Tseu'],
+    ['Ce n’est pas parce que les choses sont difficiles que nous n’osons pas, c’est parce que nous n’osons pas qu’elles sont difficiles.', 'Sénèque'],
+    ['Il n’y a pas de vent favorable pour celui qui ne sait pas où il va.', 'Sénèque'],
+    ['Le meilleur moment pour planter un arbre était il y a vingt ans. Le deuxième meilleur moment est maintenant.', 'Proverbe chinois'],
+    ['La vie, c’est comme une bicyclette : il faut avancer pour ne pas perdre l’équilibre.', 'Albert Einstein'],
+    ['Qui veut faire quelque chose trouve un moyen ; qui ne veut rien faire trouve une excuse.', 'Proverbe'],
+    ['Rome ne s’est pas faite en un jour.', 'Proverbe'],
+    ['Ce que l’on fait chaque jour compte plus que ce que l’on fait de temps en temps.', ''],
+    ['Avance à ton rythme, mais avance.', ''],
+    ['Tout ce qui est grand commence petit.', ''],
+    ['Une petite victoire aujourd’hui vaut mieux qu’un grand projet pour demain.', ''],
+    ['Chaque jour est une nouvelle occasion de bien faire.', ''],
+    ['Tu n’as pas besoin d’être parfait pour commencer, mais tu dois commencer pour progresser.', ''],
+    ['La régularité bat l’intensité.', ''],
+    ['Fais de ton mieux avec ce que tu as, là où tu es.', '']
+  ];
+
+  function seed() {
+    return {
+      version: 1,
+      quotes: DEFAULT_QUOTES.map(function (q) { return { id: uid(), text: q[0], author: q[1] }; }),
+      tasks: [
+        { id: uid(), text: 'Préparer mon sac de sport', done: false, sample: true },
+        { id: uid(), text: 'Boire un grand verre d’eau au réveil', done: false, sample: true },
+        { id: uid(), text: 'Ranger mon bureau pendant 10 minutes', done: false, sample: true }
+      ],
+      goals: [
+        { id: uid(), text: 'Installer une routine du matin', status: 'doing', sample: true },
+        { id: uid(), text: 'Lire un livre par mois', status: 'todo', sample: true }
+      ],
+      habits: [
+        { id: uid(), name: 'Attendre d’avoir coché ma première tâche avant d’ouvrir les réseaux sociaux', sample: true },
+        { id: uid(), name: 'Marcher 20 minutes', sample: true },
+        { id: uid(), name: 'Me coucher avant 23 h', sample: true }
+      ],
+      checks: {}
+    };
+  }
+
+  var STATUSES = [['todo', 'À faire'], ['doing', 'En cours'], ['done', 'Terminé']];
+
+  function normalize(d) {
+    if (!d || typeof d !== 'object') return null;
+    function arr(x) { return Array.isArray(x) ? x : []; }
+    function str(x) { return typeof x === 'string' ? x : ''; }
+    function okId(x) { return typeof x === 'string' && x ? x : uid(); }
+    var checks = {};
+    if (d.checks && typeof d.checks === 'object') {
+      Object.keys(d.checks).forEach(function (hid) {
+        var m = d.checks[hid];
+        if (m && typeof m === 'object') {
+          checks[hid] = {};
+          Object.keys(m).forEach(function (k) { if (m[k]) checks[hid][k] = true; });
+        }
+      });
+    }
+    return {
+      version: 1,
+      quotes: arr(d.quotes).filter(function (q) { return q && str(q.text).trim(); })
+        .map(function (q) { return { id: okId(q.id), text: q.text, author: str(q.author) }; }),
+      tasks: arr(d.tasks).filter(function (t) { return t && str(t.text).trim(); })
+        .map(function (t) { return { id: okId(t.id), text: t.text, done: !!t.done, sample: !!t.sample }; }),
+      goals: arr(d.goals).filter(function (g) { return g && str(g.text).trim(); })
+        .map(function (g) {
+          var s = ['todo', 'doing', 'done'].indexOf(g.status) >= 0 ? g.status : 'todo';
+          return { id: okId(g.id), text: g.text, status: s, sample: !!g.sample };
+        }),
+      habits: arr(d.habits).filter(function (h) { return h && str(h.name).trim(); })
+        .map(function (h) { return { id: okId(h.id), name: h.name, sample: !!h.sample }; }),
+      checks: checks
+    };
+  }
+
+  /* ---------- Enregistrement ---------- */
+  var state = null;
+  try {
+    var raw = localStorage.getItem(KEY);
+    if (raw) {
+      try { state = normalize(JSON.parse(raw)); }
+      catch (e) { try { localStorage.setItem(KEY + '-sauvegarde-illisible', raw); } catch (e2) { /* ignoré */ } }
+    }
+  } catch (e) { /* stockage indisponible */ }
+  if (!state) state = seed();
+
+  var $ = function (id) { return document.getElementById(id); };
+  var saveStatus = $('saveStatus');
+
+  function save() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(state));
+      saveStatus.className = 'save-status';
+      saveStatus.textContent = '✓ Enregistré automatiquement sur cet appareil';
+      return true;
+    } catch (e) {
+      saveStatus.className = 'save-status warn';
+      saveStatus.textContent = '⚠ Ce navigateur bloque l’enregistrement (navigation privée ou stockage désactivé). Vos changements seront perdus en fermant la page.';
+      return false;
+    }
+  }
+
+  function commit(focusId) {
+    save();
+    render();
+    if (focusId) {
+      var f = document.getElementById(focusId);
+      if (f) f.focus({ preventScroll: true });
+    }
+  }
+
+  /* ---------- Annulation ---------- */
+  var toast = $('toast'), toastText = $('toastText'), toastUndo = $('toastUndo');
+  var undoSnapshot = null, toastTimer = null;
+  var dlg = $('quoteDialog');
+
+  function showToast(msg, canUndo) {
+    var host = dlg.open ? dlg : document.body;
+    if (toast.parentNode !== host) host.appendChild(toast);
+    toastText.textContent = msg;
+    toastUndo.hidden = !canUndo;
+    toast.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, canUndo ? 8000 : 3000);
+  }
+  function hideToast() { toast.hidden = true; undoSnapshot = null; }
+
+  function withUndo(msg, change) {
+    var snap = JSON.stringify(state);
+    change();
+    commit();
+    undoSnapshot = snap;
+    showToast(msg, true);
+  }
+  toastUndo.addEventListener('click', function () {
+    if (!undoSnapshot) return;
+    state = normalize(JSON.parse(undoSnapshot));
+    undoSnapshot = null;
+    commit();
+    showToast('C’est annulé.', false);
+  });
+
+  /* ---------- Création d'éléments ---------- */
+  function el(tag, attrs) {
+    var n = document.createElement(tag);
+    if (attrs) {
+      Object.keys(attrs).forEach(function (k) {
+        var v = attrs[k];
+        if (v === null || v === undefined || v === false) return;
+        if (k === 'class') n.className = v;
+        else if (k === 'text') n.textContent = v;
+        else if (k === 'icon') n.innerHTML = v; /* icônes fixes uniquement */
+        else if (k.indexOf('on') === 0) n.addEventListener(k.slice(2), v);
+        else n.setAttribute(k, v === true ? '' : v);
+      });
+    }
+    for (var i = 2; i < arguments.length; i++) {
+      var c = arguments[i];
+      if (c !== null && c !== undefined) n.append(c);
+    }
+    return n;
+  }
+
+  var ICON_EDIT = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M4 20h4L19 9l-4-4L4 16v4z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M13.5 6.5l4 4" fill="none" stroke="currentColor" stroke-width="2"/></svg>';
+  var ICON_TRASH = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+  function actionBtn(kind, ariaLabel, onClick) {
+    var isEdit = kind === 'edit';
+    return el('button', {
+      type: 'button', class: 'icon-btn' + (isEdit ? '' : ' danger'),
+      'aria-label': ariaLabel, title: isEdit ? 'Renommer' : 'Supprimer', onclick: onClick
+    }, el('span', { icon: isEdit ? ICON_EDIT : ICON_TRASH, style: 'display:inline-flex' }),
+       el('span', { class: 'btn-label', text: isEdit ? 'Renommer' : 'Supprimer' }));
+  }
+
+  /* Remplace un texte par un petit formulaire de renommage */
+  function inlineEdit(host, row, value, label, onSave) {
+    row.classList.add('editing');
+    var input = el('input', { type: 'text', maxlength: '200', 'aria-label': label });
+    input.value = value;
+    var cancel = el('button', { type: 'button', class: 'btn ghost small', text: 'Annuler' });
+    var form = el('form', { class: 'inline-edit', autocomplete: 'off' },
+      input, el('button', { type: 'submit', class: 'btn small', text: 'Valider' }), cancel);
+    host.replaceWith(form);
+    var finished = false, cancelling = false;
+    function finish(keep) {
+      if (finished) return;
+      finished = true;
+      var v = input.value.trim();
+      if (keep && v && v !== value) onSave(v);
+      else render();
+    }
+    form.addEventListener('submit', function (e) { e.preventDefault(); finish(true); });
+    cancel.addEventListener('pointerdown', function () { cancelling = true; });
+    cancel.addEventListener('click', function () { finish(false); });
+    input.addEventListener('keydown', function (e) { if (e.key === 'Escape') { e.preventDefault(); finish(false); } });
+    form.addEventListener('focusout', function (e) {
+      if (e.relatedTarget && form.contains(e.relatedTarget)) return;
+      setTimeout(function () { if (!form.contains(document.activeElement)) finish(!cancelling); }, 0);
+    });
+    input.focus();
+    input.select();
+  }
+
+  /* ---------- 1. Citation du jour ---------- */
+  function todaysQuoteIndex() {
+    var n = state.quotes.length;
+    if (!n) return -1;
+    return ((dayIndex(new Date()) % n) + n) % n;
+  }
+  function renderQuote() {
+    var now = new Date();
+    $('todayDate').textContent = cap(longDate(now));
+    var i = todaysQuoteIndex();
+    if (i < 0) {
+      $('quoteText').textContent = 'Ajoutez votre première citation avec le bouton ci-dessous.';
+      $('quoteAuthor').textContent = '';
+      return;
+    }
+    var q = state.quotes[i];
+    $('quoteText').textContent = '« ' + q.text + ' »';
+    $('quoteAuthor').textContent = q.author ? '— ' + q.author : '';
+  }
+
+  function renderQuoteDialog() {
+    var list = $('quoteList');
+    list.replaceChildren();
+    var n = state.quotes.length;
+    $('quoteDialogInfo').textContent = n
+      ? plural(n, 'citation', 'citations') + '. Une citation est choisie chaque jour selon la date. Vos modifications sont enregistrées automatiquement.'
+      : 'Aucune citation pour le moment. Ajoutez-en une ci-dessous.';
+    var todayI = todaysQuoteIndex();
+    state.quotes.forEach(function (q, i) {
+      var taId = 'q-text-' + q.id, auId = 'q-author-' + q.id;
+      var ta = el('textarea', { id: taId, rows: '2', maxlength: '400' });
+      ta.value = q.text;
+      ta.addEventListener('input', function () {
+        var v = ta.value.trim();
+        if (v) { q.text = v; save(); renderQuote(); }
+      });
+      ta.addEventListener('change', function () { if (!ta.value.trim()) ta.value = q.text; });
+      var au = el('input', { type: 'text', id: auId, maxlength: '100', placeholder: 'Auteur (facultatif)' });
+      au.value = q.author;
+      au.addEventListener('input', function () { q.author = au.value.trim(); save(); renderQuote(); });
+      var del = actionBtn('delete', 'Supprimer la citation ' + (i + 1), function () {
+        withUndo('Citation supprimée.', function () {
+          state.quotes = state.quotes.filter(function (x) { return x.id !== q.id; });
+        });
+      });
+      list.append(el('li', { class: 'quote-edit' },
+        i === todayI ? el('span', { class: 'badge', text: 'Citation du jour' }) : null,
+        el('label', { class: 'sr', for: taId, text: 'Texte de la citation ' + (i + 1) }),
+        ta,
+        el('div', { class: 'row' },
+          el('label', { class: 'sr', for: auId, text: 'Auteur de la citation ' + (i + 1) }),
+          au, del)));
+    });
+  }
+
+  $('openQuotes').addEventListener('click', function () {
+    renderQuoteDialog();
+    if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+  });
+  $('closeQuotes').addEventListener('click', function () {
+    if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
+  });
+  dlg.addEventListener('close', function () {
+    if (toast.parentNode !== document.body) document.body.appendChild(toast);
+    renderQuote();
+    $('openQuotes').focus();
+  });
+  $('quoteForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var t = $('newQuoteText'), a = $('newQuoteAuthor');
+    var text = t.value.trim();
+    if (!text) { t.focus(); return; }
+    var q = { id: uid(), text: text, author: a.value.trim() };
+    state.quotes.push(q);
+    t.value = ''; a.value = '';
+    commit();
+    showToast('Citation ajoutée.', false);
+    t.focus();
+  });
+
+  /* ---------- 2. Mes tâches ---------- */
+  function taskItem(t) {
+    var id = 'task-' + t.id;
+    var cb = el('input', { type: 'checkbox', class: 'cb', id: id });
+    cb.checked = t.done;
+    cb.addEventListener('change', function () { t.done = cb.checked; t.sample = false; commit(id); });
+    var text = el('label', { for: id, class: 'text', text: t.text });
+    var li = el('li', { class: 'item' + (t.done ? ' done' : '') });
+    li.append(
+      el('label', { for: id, class: 'cb-wrap' }, cb),
+      text,
+      el('div', { class: 'actions' },
+        actionBtn('edit', 'Renommer la tâche « ' + t.text + ' »', function () {
+          inlineEdit(text, li, t.text, 'Nouveau nom de la tâche', function (v) { t.text = v; t.sample = false; commit(id); });
+        }),
+        actionBtn('delete', 'Supprimer la tâche « ' + t.text + ' »', function () {
+          withUndo('Tâche « ' + shorten(t.text) + ' » supprimée.', function () {
+            state.tasks = state.tasks.filter(function (x) { return x.id !== t.id; });
+          });
+          $('taskInput').focus({ preventScroll: true });
+        })));
+    return li;
+  }
+
+  function renderTasks() {
+    var list = $('taskList');
+    list.replaceChildren();
+    var todo = state.tasks.filter(function (t) { return !t.done; });
+    var done = state.tasks.filter(function (t) { return t.done; });
+    $('taskCount').textContent = state.tasks.length
+      ? plural(todo.length, 'restante', 'restantes') + ' · ' + plural(done.length, 'terminée', 'terminées')
+      : '';
+    if (!state.tasks.length) {
+      list.append(el('li', { class: 'empty', text: 'Aucune tâche pour le moment. Ajoutez-en une ci-dessus.' }));
+      return;
+    }
+    if (!todo.length) list.append(el('li', { class: 'cheer', text: 'Tout est fait. Bravo !' }));
+    todo.forEach(function (t) { list.append(taskItem(t)); });
+    if (done.length) {
+      list.append(el('li', { class: 'divider', text: 'Terminées' }));
+      done.forEach(function (t) { list.append(taskItem(t)); });
+    }
+  }
+
+  $('taskForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var input = $('taskInput'), v = input.value.trim();
+    if (!v) { input.focus(); return; }
+    state.tasks.push({ id: uid(), text: v, done: false, sample: false });
+    input.value = '';
+    commit();
+    input.focus();
+  });
+
+  /* ---------- 3. Mes objectifs ---------- */
+  function renderGoals() {
+    var list = $('goalList');
+    list.replaceChildren();
+    var nDone = state.goals.filter(function (g) { return g.status === 'done'; }).length;
+    $('goalCount').textContent = state.goals.length
+      ? nDone + ' terminé' + (nDone > 1 ? 's' : '') + ' sur ' + state.goals.length
+      : '';
+    if (!state.goals.length) {
+      list.append(el('li', { class: 'empty', text: 'Aucun objectif pour le moment. Ajoutez-en un ci-dessus.' }));
+      return;
+    }
+    state.goals.forEach(function (g) {
+      var selId = 'goal-' + g.id;
+      var sel = el('select', { id: selId, class: 'status', 'data-status': g.status, 'aria-label': 'Statut de l’objectif « ' + g.text + ' »' });
+      STATUSES.forEach(function (s) { sel.append(el('option', { value: s[0], text: s[1] })); });
+      sel.value = g.status;
+      sel.addEventListener('change', function () { g.status = sel.value; g.sample = false; commit(selId); });
+      var text = el('span', { class: 'text', text: g.text });
+      var li = el('li', { class: 'item goal' });
+      li.append(text, sel, el('div', { class: 'actions' },
+        actionBtn('edit', 'Renommer l’objectif « ' + g.text + ' »', function () {
+          inlineEdit(text, li, g.text, 'Nouveau nom de l’objectif', function (v) { g.text = v; g.sample = false; commit(selId); });
+        }),
+        actionBtn('delete', 'Supprimer l’objectif « ' + g.text + ' »', function () {
+          withUndo('Objectif « ' + shorten(g.text) + ' » supprimé.', function () {
+            state.goals = state.goals.filter(function (x) { return x.id !== g.id; });
+          });
+          $('goalInput').focus({ preventScroll: true });
+        })));
+      list.append(li);
+    });
+  }
+
+  $('goalForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var input = $('goalInput'), v = input.value.trim();
+    if (!v) { input.focus(); return; }
+    state.goals.push({ id: uid(), text: v, status: 'todo', sample: false });
+    input.value = '';
+    commit();
+    input.focus();
+  });
+
+  /* ---------- 4. Mes habitudes ---------- */
+  var weekOffset = 0;
+
+  function weekTitle(mon) {
+    var sun = addDays(mon, 6);
+    var start;
+    if (mon.getFullYear() !== sun.getFullYear()) start = dayNum(mon) + ' ' + MONTHS[mon.getMonth()] + ' ' + mon.getFullYear();
+    else if (mon.getMonth() !== sun.getMonth()) start = dayNum(mon) + ' ' + MONTHS[mon.getMonth()];
+    else start = dayNum(mon);
+    return 'Semaine du ' + start + ' au ' + dayNum(sun) + ' ' + MONTHS[sun.getMonth()] + ' ' + sun.getFullYear();
+  }
+
+  function renderHabits() {
+    var today = new Date(), todayKey = dateKey(today);
+    var mon = addDays(mondayOf(today), weekOffset * 7);
+    var days = [];
+    for (var i = 0; i < 7; i++) days.push(addDays(mon, i));
+
+    $('weekLabel').textContent = weekTitle(mon);
+    var n = Math.abs(weekOffset);
+    $('weekSub').textContent = weekOffset === 0 ? 'Semaine en cours'
+      : weekOffset < 0 ? 'Il y a ' + plural(n, 'semaine', 'semaines')
+      : 'Dans ' + plural(n, 'semaine', 'semaines');
+    $('weekCurrent').disabled = weekOffset === 0;
+
+    var headRow = el('tr', null, el('th', { scope: 'col', class: 'habit-col', text: 'Habitude' }));
+    days.forEach(function (d) {
+      var isToday = dateKey(d) === todayKey;
+      headRow.append(el('th', { scope: 'col', class: isToday ? 'is-today' : null, 'aria-current': isToday ? 'date' : null },
+        el('span', { text: SHORT_DAYS[d.getDay()] }),
+        el('span', { class: 'dnum', text: String(d.getDate()) }),
+        isToday ? el('span', { class: 'tag', text: 'Aujourd’hui' }) : null));
+    });
+    headRow.append(el('th', { scope: 'col', text: 'Total' }));
+    $('habitHead').replaceChildren(headRow);
+
+    var body = $('habitBody');
+    body.replaceChildren();
+    if (!state.habits.length) {
+      body.append(el('tr', { class: 'empty-row' }, el('td', { colspan: '9', class: 'empty', text: 'Aucune habitude pour le moment. Ajoutez-en une ci-dessous.' })));
+      return;
+    }
+    state.habits.forEach(function (h) {
+      var marks = state.checks[h.id] || {};
+      var nameSpan = el('span', { class: 'habit-name', text: h.name });
+      var th = el('th', { scope: 'row', class: 'habit-col' }, nameSpan);
+      var tr = el('tr', null, th);
+      th.append(el('div', { class: 'actions' },
+        actionBtn('edit', 'Renommer l’habitude « ' + h.name + ' »', function () {
+          inlineEdit(nameSpan, tr, h.name, 'Nouveau nom de l’habitude', function (v) { h.name = v; h.sample = false; commit(); });
+        }),
+        actionBtn('delete', 'Supprimer l’habitude « ' + h.name + ' »', function () {
+          withUndo('Habitude « ' + shorten(h.name) + ' » supprimée.', function () {
+            state.habits = state.habits.filter(function (x) { return x.id !== h.id; });
+            delete state.checks[h.id];
+          });
+          $('habitInput').focus({ preventScroll: true });
+        })));
+      var count = 0;
+      days.forEach(function (d) {
+        var k = dateKey(d);
+        var id = 'h-' + h.id + '-' + k;
+        var cb = el('input', { type: 'checkbox', class: 'cb', id: id, 'aria-label': h.name + ' — ' + longDate(d) });
+        cb.checked = !!marks[k];
+        if (cb.checked) count++;
+        cb.addEventListener('change', function () {
+          var m = state.checks[h.id] || (state.checks[h.id] = {});
+          if (cb.checked) m[k] = true; else delete m[k];
+          h.sample = false;
+          commit(id);
+        });
+        var cls = [];
+        if (k === todayKey) cls.push('is-today');
+        if (k > todayKey) cls.push('is-future');
+        tr.append(el('td', { class: cls.join(' ') || null }, el('label', { class: 'cb-wrap', for: id }, cb)));
+      });
+      tr.append(el('td', { class: 'count', text: count + '/7' }));
+      body.append(tr);
+    });
+  }
+
+  $('weekPrev').addEventListener('click', function () { weekOffset--; renderHabits(); });
+  $('weekNext').addEventListener('click', function () { weekOffset++; renderHabits(); });
+  $('weekCurrent').addEventListener('click', function () { weekOffset = 0; renderHabits(); $('weekPrev').focus(); });
+
+  $('habitForm').addEventListener('submit', function (e) {
+    e.preventDefault();
+    var input = $('habitInput'), v = input.value.trim();
+    if (!v) { input.focus(); return; }
+    state.habits.push({ id: uid(), name: v, sample: false });
+    input.value = '';
+    commit();
+    input.focus();
+  });
+
+  /* ---------- Exemples ---------- */
+  function hasSamples() {
+    return state.tasks.some(function (x) { return x.sample; }) ||
+      state.goals.some(function (x) { return x.sample; }) ||
+      state.habits.some(function (x) { return x.sample; });
+  }
+  $('removeSamples').addEventListener('click', function () {
+    withUndo('Exemples retirés.', function () {
+      state.tasks = state.tasks.filter(function (x) { return !x.sample; });
+      state.goals = state.goals.filter(function (x) { return !x.sample; });
+      state.habits = state.habits.filter(function (x) {
+        if (x.sample) delete state.checks[x.id];
+        return !x.sample;
+      });
+    });
+  });
+
+  /* ---------- Affichage général ---------- */
+  var renderedDay = '';
+  function render() {
+    renderedDay = dateKey(new Date());
+    $('sampleBar').hidden = !hasSamples();
+    renderQuote();
+    renderTasks();
+    renderGoals();
+    renderHabits();
+    if (dlg.open) renderQuoteDialog();
+  }
+
+  /* Passage à minuit : nouvelle date, nouvelle citation, nouveau jour mis en évidence */
+  function checkDayChange() {
+    if (dateKey(new Date()) !== renderedDay && !document.querySelector('.inline-edit')) render();
+  }
+  setInterval(checkDayChange, 30000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) checkDayChange(); });
+
+  /* Même page ouverte dans deux onglets : on garde les deux à jour */
+  window.addEventListener('storage', function (e) {
+    if (e.key !== KEY || !e.newValue) return;
+    try {
+      var next = normalize(JSON.parse(e.newValue));
+      if (next) { state = next; render(); }
+    } catch (err) { /* ignoré */ }
+  });
+
+  save();
+  render();
+})();
+</script>
+</body>
+</html>
